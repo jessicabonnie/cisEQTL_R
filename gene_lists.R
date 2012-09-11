@@ -1,13 +1,7 @@
 
-#chrom =
-#cell_type =
-#MBstart = 
-#MBend = 
-#out_folder =
-#region.ID = 
-put_loc = '/home/jkb4y/ubs/work/Achilleas/hg19/yank_put.txt'
-#subset.by.region<- function(df,region.info, expansion=0){
+
 subset.by.region<- function(df,region, expansion=0){
+#as the name suggests, subset a dataframe using region information, possibly with an expansion argument to expand the region. Expansion given in MB.
 	#MBstart = as.numeric(region.info[[3]]) - expansion
 	MBstart = as.numeric(region$region_start) - expansion
 	MBend = as.numeric(region$region_end) + expansion
@@ -25,6 +19,7 @@ subset.by.region<- function(df,region, expansion=0){
 }
 
 subset.by.gene <- function(df, gene){
+#subset data frame by a specific gene in the GENE column
 	sub_df <- df$GENE == gene
 	gene_df <- df[sub_df, ]
 	#gene_results <- subset(df, sub_df)
@@ -32,16 +27,15 @@ subset.by.gene <- function(df, gene){
 }
 
 unique.gene.list <- function(df){
+#create a list genes in the dataframe
 	genes <- as.character(df$GENE)
 	gene.list <- unique(genes)
 	#print(gene.list)
 	return(gene.list)
 }
 
-#write.genelist <- function(table_loc, region.info, out_folder,yank_loc){
+
 write.genelist <- function(table_loc, region, out_folder,yank_loc){
-	#print(region.info)
-	#region.ID = as.character(region.info[[1]])
 	region.ID = as.character(region$region_id)
 	
 	out_name = paste0(region.ID,"_genes.list")
@@ -50,12 +44,9 @@ write.genelist <- function(table_loc, region, out_folder,yank_loc){
 
 	results <- read.table(table_loc, T,strip.white = TRUE)
 	gene_region_results <- subset.by.region(results,region)
-	#gene_region_results <- subset.by.region(results,region.info)
 	sig_gene_results <- as.numeric(gene_region_results$EMP1) <= 5e-3
 	sig_region_results <-gene_region_results[sig_gene_results,]
-	##sig_region_results <-subset(gene_region_results, sig_gene_results)
 	snp_region_results <- subset.by.region(results, region,expansion=.5)
-	#snp_region_results <- subset.by.region(results, region.info,expansion=.5)
 	gene.list <- unique.gene.list(sig_region_results)
 	
 	#genes <- as.character(gene_region_results$GENE)
@@ -66,14 +57,12 @@ write.genelist <- function(table_loc, region, out_folder,yank_loc){
 		dir.create(region_folder)
 		}
 	}
-	#print(out_folder)
 	if ( file.exists(out_loc)){
 	unlink(out_loc)
 	}
 	lapply(gene.list, write, out_loc, append=TRUE, ncolumns=1)
 	lapply(gene.list, function(x){write.gene.max(x, snp_region_results, region_folder)})
 	yank_thing <- adply(gene.list, 1,function(x){retrieve.yank.lines(x, snp_region_results, yank_loc,region)})
-		#yank_thing <- adply(gene.list, 1,function(x){retrieve.yank.lines(x, snp_region_results, yank_loc,region.info)})
 	#yank_thing <- lapply(gene.list, function(x){retrieve.yank.lines(x, snp_region_results, yank_loc,region.info)})
 	print(yank_thing)
 
@@ -90,23 +79,17 @@ cat(names, file = yank.loc, sep = "\t", fill = FALSE, labels = NULL, append = FA
 
 
 do.stuff <-function(region, table_loc, out_folder,yank_loc){
-	#region.info <- read.region.info(region)
-	#yank_thing <- write.genelist(table_loc, region.info, out_folder,yank_loc)
 	yank_thing <- write.genelist(table_loc, region, out_folder,yank_loc)
 	return(yank_thing)
 }
 
 read.region.info <- function(region){
 	print(region)
-	#chrom <- as.numeric(region[1])
 	chrom <- as.numeric(region$gene_chr)
-	#MBstart <- as.numeric(region[3])
 	MBstart <- as.numeric(region$region_start)
-	#MBend <- as.numeric(region[4])
 	MBend <- as.numeric(region$region_end)
 	region.ID <-as.character(region$region_id)
 	region.info = c(region.ID,chrom,MBstart,MBend)
-	#print(region.info)
 	return(region.info)
 }
 
@@ -126,13 +109,10 @@ write.gene.max <- function(gene, df, out_folder){
 
 }
 
-#include.region.cols <- function(df, region.info){
+
 include.region.cols <- function(df, region){
 	df$REGION <- as.character(region$region_id)
-	#df$REGION <- region.info[1]
-	#df$START <- region.info[3]
 	df$START <- as.character(region$region_start)
-	#df$END <- region.info[4]
 	df$END <- as.character(region$region_end)
 	return(df)
 }
@@ -149,7 +129,6 @@ total_df <- rbind(total_df, input_df)
 }
 
 
-#retrieve.yank.lines <- function(gene, df,yank.loc, region.info){
 retrieve.yank.lines <- function(gene, df,yank.loc, region){
 	gene_results <- subset.by.gene(df, gene)
 	#sub_df <- df$GENE == gene
@@ -158,8 +137,6 @@ retrieve.yank.lines <- function(gene, df,yank.loc, region){
 	#gene_results <- include.region.cols(gene_results, region.info)
 	#gene_results$REGION <-region.ID
 	min.p = as.numeric(gene_results$EMP1[order(gene_results$EMP1)[1]])
-	#min.p = as.numeric(ordered$EMP1[1])
-	#print(min.p)
 	yank_sub_results <- as.numeric(gene_results$EMP1) == min.p
 	yank_region_results <- gene_results[yank_sub_results,]
 	#yank_region_results <-subset(gene_results, yank_sub_results)
@@ -185,9 +162,9 @@ df <- read.table(table_loc,T)
 write.title(yank_loc,df)
 df <- NULL
 thing <- adply(regions, 1, function(x){do.stuff(x, table_loc=table_loc,out_folder=out_folder, yank_loc=yank_loc)})
-	myvars <- c("REGION", "GENE","SNP_AP","SNP_IM","CHR","BP","EMP1")
-	newdata <- thing[myvars]
-	write.table(newdata, file = yank2_loc, append = FALSE, quote = FALSE, sep = "\t",
+	columns <- c("REGION", "GENE","SNP_AP","SNP_IM","CHR","BP","EMP1")
+	yank.df <- thing[columns]
+	write.table(yank.df, file = yank2_loc, append = FALSE, quote = FALSE, sep = "\t",
             eol = "\n", na = "NA", row.names = FALSE, col.names = TRUE)
 
 #thing <- apply(regions, 1, function(x){do.stuff(x, table_loc=table_loc,out_folder=out_folder, yank_loc=yank_loc)})

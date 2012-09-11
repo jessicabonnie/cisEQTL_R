@@ -1,3 +1,5 @@
+
+# Original manhattan code forked from:
 # Stephen Turner
 # http://StephenTurner.us/
 # http://GettingGeneticsDone.blogspot.com/
@@ -22,7 +24,7 @@
 # annotatesnps <- d$SNP[7550:7750]
 
 
-
+# plot Achilleas' cis-EQTL data, taking a perm flag if it is a perm file
 achilleas <-function(cell_type = NULL, perm = FALSE, flag = NULL, colors=c("navy","orange"), genomewideline=-log10(3.5e-7),...){
 data_folder = "/home/jkb4y/ubs/work/data/Achilleas/cis-eQTL"
 permflag = ''
