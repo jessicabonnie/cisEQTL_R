@@ -1,9 +1,10 @@
-make_manageable_table <- function(file_loc, cell_type, wanted_cols=c('P','A1','BETA'), merge_cols=c('SNP','GENE'),filter='1e-4', cis=TRUE){
+make_manageable_table <- function(file_loc, cell_type, wanted_cols=c('P','A1','BETA'), merge_cols=c('SNP','GENE'),filter='1e-4', cis=TRUE, exon=FALSE){
 	#cell_table <- read.table(file_loc, T)
-	source('gene_lists.R')
-	cell_table <- read_and_filter(file_loc,as.numeric(filter),perm=FALSE, cis)
+	#source('gene_lists.R')
+	cell_table <- read_and_filter(file_loc,as.numeric(filter),perm=FALSE)
 	cell_table$SNP <- cell_table$SNP_AP
-	cell_table$SNP_JB <- cell_table$SNP_LZ_JB
+	names(cell_table)[names(cell_table)=="SNP_LZ_JB"] <- "SNP_JB"
+	#cell_table$SNP_JB <- cell_table$SNP_LZ_JB
 	print(colnames(cell_table))
 	cell_table <- cell_table[ , c(merge_cols,wanted_cols)]
 	for (name in wanted_cols){
@@ -14,37 +15,36 @@ make_manageable_table <- function(file_loc, cell_type, wanted_cols=c('P','A1','B
 	return(cell_table)
 }
 
-big_fish_eats_little <- function(total_table, cell_table){
-	merge_by <- c('SNP','GENE')
-	total_table <- merge(total_table, cell_table, by=merge_by, all=TRUE)
 
 
-
-
-}
-
-locate_table <- function(cell, perm, exon, cis){
-	tablefolder = '/home/jkb4y/ubs/work/data/Achilleas/eQTLs_Oct2012'
-	filter_tail = paste0('_filtered_','1e-4','_JB','.txt')
-	permflag = ''
-	if (perm){ permflag = '_perm'}
+locate_table <- function(cell, exon, cis, tablefolder=NA){
+	#tablefolder = '/home/jkb4y/ubs/work/data/Achilleas/eQTLs_Feb2013_pcaCorrected'
+	filter_tail = paste0('_filtered_','1e-04','.txt')
 	if (exon){
-		filename = paste0(cell,'_exon_cis_eqtl',permflag,'_results',filter_tail)
-	}
-	else if (! cis){
-	filename = paste0(cell,'_all_data_JB.txt')
-	}
-	else {
-	filename = paste0(cell,'_cis_transcript_eqtls',permflag,filter_tail)
-	}
+		exonflag = 'exon'
+		}
+	else{ exonflag = 'transcript'}
+	if (cis){ cisflag = 'Cis'}
+	else {cisflag = 'Trans'}
+	
+	#if (cis & ! exon){filter_tail = '.txt'}
+	filename = paste0(exonflag,cisflag,cell,filter_tail)
+		
+	#else if (! cis){
+	#filename = paste0(cell,'_all_data_JB.txt')
+	#}
+	#else {
+	#filename = paste0(cell,'_cis_transcript_eqtls',permflag,filter_tail)
+	#}
 	file_loc = file.path(tablefolder, filename)
 	return(file_loc)
 
 }
-locate_merge_out <- function(perm, exon, cis, filter, type='merge', outfolder=NA){
+locate_merge_out <- function(basefolder= NA,perm, exon, cis, filter, type='merge', outfolder=NA){
+	out_loc = NULL
 if (is.na(outfolder)){
 	#basefolder = '/home/jkb4y/ubs/work/results/Achilleas/eQTLs_Oct2012'
-	basefolder= '/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Oct2012'
+	#basefolder= '/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Feb2013_pcaCorrected'
 	if (!cis){cisfolder = 'trans'; cis_flag = 'trans_'}
 	else{cisfolder = 'cis'; cis_flag = 'cis_'}
 	if (! cis){ cis_flag = 'trans_'}
@@ -53,10 +53,12 @@ if (is.na(outfolder)){
 	else{transfolder = "transcript"}
 	if (perm){permflag <- "_perm"}
 	else{permflag <- ""}
-	outfolder <- file.path(basefolder, cisfolder, transfolder)
+	outfolder <- file.path(basefolder, transfolder, cisfolder)
 	}
 	if (type=='merge'){
 	out_loc <- file.path(outfolder, paste0(cis_flag,'merge_',filter,'.tbl'))
+	}
+	else if (type == 'noNA'){out_loc <- file.path(outfolder, paste0(cis_flag, 'NAabove1e-4_merge_',filter,'.tbl'))
 	}
 	else if (type=='thin'){out_loc <- file.path(outfolder, paste0(cis_flag,'thin_merge_',filter,'.tbl'))
 	}
@@ -66,7 +68,12 @@ if (is.na(outfolder)){
 	}
 	else if (type =='countcross'){out_loc <- file.path(outfolder, paste0(cis_flag,'count_crosstab_',filter,'.tbl'))
 	}
+	else if (type =='si'){out_loc <- file.path(outfolder, paste0(cis_flag,'SI_NAabove1e-4_merge.tbl'))
+	}
+	else if (type =='folder'){out_loc <- outfolder
+	}
 	print(out_loc)
+	
 	return(out_loc)
 
 }
@@ -79,6 +86,26 @@ write_out <-function(df, out_loc){
 
 
 }
+
+read_and_filter <- function(table_loc, filter, perm){
+	df <- read.table(table_loc, header=T, stringsAsFactors=FALSE, sep='\t')
+	names(df)[names(df)=='SNP']<-'SNP_AP'
+	print(head(df))
+	#if (! cis & ! exon){
+	#	df <- df[df$TRANS.CIS == 'trans',]
+	#}
+	if (perm){
+		df$P = df$EMP1
+	}
+	sub <- as.numeric(df$P) <= as.numeric(filter)
+	df <-df[sub,]
+	return(df)
+
+}
+
+
+
+
 add_SI_value <- function(df, si_loc){
 	si_table <- read.table(si_loc, T)
 	si_list <- si_table$conditional_SNP
@@ -192,27 +219,51 @@ add_regions <- function(df, region_loc){
 	return(df)
 }
 
-merge_tables <- function(outfolder=NA, perm=FALSE, exon=FALSE, filter='1e-4',region_loc='/home/jkb4y/work/data/Region_Lists/hg19/achilleas_all_09202012.txt',cis=TRUE, si_loc='/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Oct2012/data/si_SNP_NoMHC_20121024_Query.txt', gwas_loc="/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Oct2012/data/gwascatalog_11262012.txt",r2_loc='/home/jkb4y/cphgdesk_share/Projects/IMCHIP/Intersect_SNP_list/2012Oct17/eurmeta/eurmeta_LD/all_regions_r2_0.ld',yank_loc='/home/jkb4y/cphgdesk_share/Projects/IMCHIP/Intersect_SNP_list/2012Oct17/eurmeta/RegionYank/eurmeta_yank.tbl'){
+determine_merge_cols <- function(exon){
+	
+	if (! exon){
+		merge_cols <- c('SNP','GENE','CHR','BP', 'SNP_JB','SNP_IM')
+		}
+	else{
+		merge_cols <- c('SNP','GENE','EXON','CHR','BP', 'SNP_JB','SNP_IM')
+	
+		}
+	return(merge_cols)
+}
+
+create_empty_df <- function(col_names){
+	df <- data.frame(t(rep(NA,length(col_names))))
+	names(df) <- col_names
+	df <- df[-1,]
+	return(df)
+}
+
+
+
+merge_tables <- function(outfolder=NA, perm=FALSE, exon=FALSE, filter='1e-4',region_loc='/home/jkb4y/work/data/Region_Lists/hg19/achilleas_all_09202012.txt',cis=TRUE, si_loc='/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Feb2013_pcaCorrected/data/si_SNP_NoMHC_20121024_Query.txt', gwas_loc="/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Feb2013_pcaCorrected/data/gwascatalog_20130111.txt",r2_loc='/home/jkb4y/cphgdesk_share/Projects/IMCHIP/Intersect_SNP_list/2012Oct17/eurmeta/eurmeta_LD/all_regions_r2_0.ld',yank_loc='/home/jkb4y/cphgdesk_share/Projects/IMCHIP/Intersect_SNP_list/2012Oct17/eurmeta/RegionYank/eurmeta_yank.tbl', basefolder=NA, tablefolder = NA, ...){
+#merge_tables <- function(outfolder=NA, perm=FALSE, exon=FALSE, filter='1e-4',region_loc='/home/jkb4y/work/data/Region_Lists/hg19/achilleas_all_09202012.txt',cis=TRUE, si_loc='/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Feb2013_pcaCorrected/data/si_SNP_NoMHC_20121024_Query.txt', gwas_loc="/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Feb2013_pcaCorrected/data/gwascatalog_20130111.txt",r2_loc='/home/jkb4y/cphgdesk_share/Projects/IMCHIP/Intersect_SNP_list/2012Oct17/eurmeta/eurmeta_LD/all_regions_r2_0.ld',yank_loc='/home/jkb4y/cphgdesk_share/Projects/IMCHIP/Intersect_SNP_list/2012Oct17/eurmeta/RegionYank/eurmeta_yank.tbl', basefolder='/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Feb2013_pcaCorrected', tablefolder = '/home/jkb4y/ubs/work/data/Achilleas/eQTLs_Feb2013_pcaCorrected', ...){
 	library(plyr)
 	cell_types <- c('B','CD4','CD8','MONO','NK')
 	#merge_cols <- c('SNP','GENE','CHR','BP', 'SNP_JB')
 	#if (exon){ merge_cols <- c(merge_cols,'EXON')}
 	wanted_cols <- c('P','BETA','A1')
+	merge_cols <- determine_merge_cols(exon)
+	empty_df <- create_empty_df(merge_cols)
 	if (! exon){
-		merge_cols <- c('SNP','GENE','CHR','BP', 'SNP_JB')
+		merge_cols <- c('SNP','GENE','CHR','BP', 'SNP_JB','SNP_IM')
 		mamatable <- data.frame(SNP = character(0), GENE = character(0),
-			CHR = character(0), BP = character(0),SNP_JB = character(0))
+			CHR = character(0), BP = character(0),SNP_JB = character(0),SNP_IM = character(0))
 		}
 	else{
-		merge_cols <- c('SNP','GENE','EXON','CHR','BP', 'SNP_JB')
+		merge_cols <- c('SNP','GENE','EXON','CHR','BP', 'SNP_JB','SNP_IM')
 		mamatable <- data.frame(SNP = character(0), GENE = character(0),
-			EXON = character(0), CHR = character(0), BP = character(0),SNP_JB = character(0))
+			EXON = character(0), CHR = character(0), BP = character(0),SNP_JB = character(0),SNP_IM = character(0))
 	
 		}
 	for (cell_type in cell_types){
-		table_loc <- locate_table(cell_type, perm, exon, cis)
+		table_loc <- locate_table(cell_type, exon, cis, tablefolder)
 		print(table_loc)
-		cell_table <- make_manageable_table(table_loc, cell_type, wanted_cols=wanted_cols,merge_cols=merge_cols, filter, cis)
+		cell_table <- make_manageable_table(table_loc, cell_type, wanted_cols=wanted_cols,merge_cols=merge_cols, filter, cis, exon)
 		mamatable <-  merge(mamatable, cell_table, by=merge_cols, all=TRUE, all.x=TRUE, all.y=TRUE)
 		cell_table <- NULL
 	}
@@ -221,36 +272,79 @@ merge_tables <- function(outfolder=NA, perm=FALSE, exon=FALSE, filter='1e-4',reg
 	mamatable <- add_regions(mamatable, region_loc)
 	mamatable <- add_SI_value(mamatable, si_loc)
 	mamatable <- add_r2_info(mamatable, r2_loc, yank_loc)
+	
+	mamanona <- mamatable[,c(merge_cols,'REGION','SI','R2','csnp')]
+	
+	names(mamatable)[names(mamatable)=="BP"] <- "bp"
+	#names(mamanona)[names(mamanona)=="BP"] <- "bp"
 	#mamatable <- add_literature_info(mamatable, gwas_loc)
 	
 	
 	sumtable <- summarize_mama(mamatable)
-	sum_loc <- locate_merge_out(perm=perm,exon=exon,cis=cis,filter=filter,type='countsum', outfolder=outfolder)
+	sum_loc <- locate_merge_out(basefolder=basefolder,perm=perm,exon=exon,cis=cis,filter=filter,type='countsum', outfolder=outfolder)
 	print(sum_loc)
 	write.table(sumtable,file=sum_loc, row.names=FALSE, col.names=TRUE, sep='\t',quote=FALSE)
 	sumtable <- NULL
 	
 	crosstab <- crosstab_mama(mamatable)
-	cross_loc <- locate_merge_out(perm=perm,exon=exon,cis=cis,filter=filter,type='countcross', outfolder=outfolder)
+	cross_loc <- locate_merge_out(basefolder=basefolder,perm=perm,exon=exon,cis=cis,filter=filter,type='countcross', outfolder=outfolder)
 	print(cross_loc)
 	write.table(crosstab,file=cross_loc, row.names=FALSE, col.names=TRUE, sep='\t',quote=FALSE)
 	crosstab <- NULL
 	
 	print(head(mamatable))
-	mama_loc <- locate_merge_out(perm=perm,exon=exon,cis=cis,filter=filter,type='merge', outfolder=outfolder)
+	mama_loc <- locate_merge_out(basefolder=basefolder,perm=perm,exon=exon,cis=cis,filter=filter,type='merge', outfolder=outfolder)
 	write_out(mamatable, mama_loc)
 	multigenes <- find_multiregs(mamatable)
 	
 	#multigenes <- add_regions(regions, multigenes)
-	multi_loc <- locate_merge_out(perm=perm,exon=exon,cis=cis,filter=filter,type='multigene', outfolder=outfolder)
+	multi_loc <- locate_merge_out(basefolder=basefolder,perm=perm,exon=exon,cis=cis,filter=filter,type='multigene', outfolder=outfolder)
 	write_out(multigenes, multi_loc)
 	multigenes <- NULL
 	
 	minimama <- thin_out(mamatable, cell_types)
-	thin_loc <- locate_merge_out(perm=perm,exon=exon,cis=cis,filter=filter,type='thin', outfolder=outfolder)
+	thin_loc <- locate_merge_out(basefolder=basefolder,perm=perm,exon=exon,cis=cis,filter=filter,type='thin', outfolder=outfolder)
 	write_out(minimama, out_loc=thin_loc)
 	minimama <- NULL
-	return(mamatable)
+	#return(mamatable)
+	
+	#make merges without a p-value threshold
+	mamatable <-NULL
+	#create si_list
+	si_table = read.table(si_loc, T)
+	si_list <- si_table$conditional_SNP
+	si_merge <- empty_df
+	names(si_merge)[names(si_merge)=="bp"] <- "BP"
+	
+	for (cell_type in cell_types){
+		table_loc <- locate_table(cell_type, exon, cis, tablefolder)
+		print(table_loc)
+		cell_table <- make_manageable_table(table_loc, cell_type, wanted_cols=wanted_cols,merge_cols=merge_cols, filter=1, cis, exon)
+		mamanona <-  merge(mamanona, cell_table, by=merge_cols, all.x=TRUE, all.y=FALSE)
+		cell_table <- cell_table[cell_table$SNP_JB %in% si_list, ]
+		si_merge <- merge(si_merge,cell_table, by=merge_cols, all=TRUE)
+		print(head(si_merge))
+		cell_table <- NULL
+	}
+	nona_loc <- locate_merge_out(basefolder=basefolder,perm=perm,exon=exon,cis=cis,filter=filter,type='noNA', outfolder=outfolder)
+	
+	names(mamanona)[names(mamanona)=="BP"] <- "bp"
+	#extra_snp_name_cols = c(which(names(mamanona)=="SNP_IM"),which(names(mamanona)=="SNP_JB"))
+	extra_snp_names = c("SNP_IM","SNP_JB")
+	col_order = c(names(mamanona)[-which(names(mamanona) %in% extra_snp_names)],extra_snp_names)
+	mamanona <- mamanona[ , col_order]
+	print(colnames(mamanona))
+	write_out(mamanona, out_loc=nona_loc)
+	mamanona <- NULL
+	
+	si_merge_loc <- locate_merge_out(basefolder=basefolder,perm=perm,exon=exon,cis=cis,filter=filter,type='si', outfolder=outfolder)
+	names(si_merge)[names(si_merge)=="BP"] <- "bp"
+	extra_snp_names = c("SNP_IM","SNP_JB")
+	col_order = c(names(si_merge)[-which(names(si_merge) %in% extra_snp_names)],extra_snp_names)
+	si_merge <- si_merge[ , col_order]
+	print(colnames(si_merge))
+	write_out(si_merge, out_loc=si_merge_loc)
+	si_merge <- NULL
 }
 
 find_multiregs <- function(df){
@@ -287,7 +381,7 @@ locate_yank <- function(basefolder, cell, perm, exon, cis){
 	}
 	if (!cis){
 	cisfolder = 'trans'
-	basefolder <- file.path(basefolder, cisfolder, transfolder, cell, 'RegionYank')
+	basefolder <- file.path(basefolder, transfolder, cisfolder, cell, 'RegionYank')
 	filename <- paste0(cell, '_R_yank.tbl')
 	file_loc <- file.path(basefolder, filename)
 	return(file_loc)
@@ -295,24 +389,7 @@ locate_yank <- function(basefolder, cell, perm, exon, cis){
 
 }
 
-compare <- function(outfolder, basefolder, perm=FALSE, exon=FALSE){
-	cells <-c('B','CD4','CD8','MONO','NK')
-	subcells <- cells
-	for (cell in cells){
-		cell_loc <- locate_yank(basefolder, cell, perm, exon)
-		cell_table <- read.table(cell_loc, T)
-		subcells <- subcells[cells != cell]
-		for (subcell in subcells){
-			subcell_loc <- locate_yank(basefolder, subcell, perm, exon)
-			subcell_table <- read.table(subcell_loc, T)
-			
-			compare_pair(cell_yank, subcell_yank)
-		
-		}
-	
-	}
 
-}
 
 double_summary_helper <- function(cell_type, df, cell_list){
 	sub <- df[!is.na(df[ ,paste0(cell_type,'.P')]), ]
@@ -350,4 +427,180 @@ crosstab_mama <- function(df){
 	cells <-c('B','CD4','CD8','MONO','NK')
 	crosstab <- ldply(cells,.fun=function(x){double_summary_helper(x, df, cells)})
 	return(crosstab)
+}
+
+compare_merges <- function(exon=FALSE, basefolder='/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Feb2013_pcaCorrected/'){
+	if (exon){ exonflag = 'exon'}
+	else {exonflag = 'transcript'}
+	outfolder = file.path(basefolder, exonflag)
+	filename = paste0(exonflag,'_cis_trans_merge.tbl')
+	cistable_loc = file.path(outfolder, 'cis','cis_merge_4.45e-5.tbl')
+	transtable_loc = file.path(outfolder, 'trans','trans_merge_9.05e-7.tbl')
+	cistable = read.table(cistable_loc, T, sep='\t', stringsAsFactors=F)
+	transtable = read.table(transtable_loc, T, sep='\t',stringsAsFactors=F)
+
+	#RENAME the columns that aren't being merged
+	trans_indices <- c(grep(".P", names(transtable), fixed=TRUE),grep(".A1", names(transtable), fixed=TRUE), grep(".BETA", names(cistable), fixed=TRUE),grep("GENE", names(transtable)))
+	cis_indices <- c(grep(".P", names(cistable), fixed=TRUE),grep(".A1", names(cistable), fixed=TRUE), grep(".BETA", names(cistable), fixed=TRUE), grep("GENE",names(cistable)))
+	colnames(transtable)[trans_indices] <- paste0(names(transtable)[trans_indices],'.TRANS')
+	colnames(cistable)[cis_indices] <- paste0(names(cistable)[cis_indices],'.CIS')
+	
+	#Discover the names of the ones that are to be merged!
+	trans_merge_cols <- colnames(transtable)[-trans_indices]
+	cis_merge_cols <- colnames(cistable)[-cis_indices]
+	mergemerge <-  merge(cistable, transtable, by=trans_merge_cols, all=TRUE)
+	print(head(mergemerge))
+	return(mergemerge)
+
+}
+
+merge_overlap <- function(exon=FALSE, basefolder='/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Feb2013_pcaCorrected/'){
+	dict_loc = '/home/jkb4y/work/data/annot_hg19_extended.dict'
+	annot_dict <- read.table(dict_loc, stringsAsFactors=F)
+	colnames(annot_dict) <- c('imchip', 'lz', 'rs', 'hg19_chr', 'hg19_pos','hg18_chr','hg18_pos','chr_band', 'FunctionGVS', 'weimin', 'FunctionDBSNP', 'GeneList', 'DistanceToSplice', 'AminoAcids')
+	annot_dict <- annot_dict[,which(names(annot_dict) %in% c('imchip', 'FunctionGVS', 'GeneList', 'AminoAcids', 'FunctionDBSNP', 'DistanceToSplice'))]
+	
+	
+	if (exon){ exonflag = 'exon'}
+	else {exonflag = 'transcript'}
+	outfolder = file.path(basefolder, exonflag)
+	#filename = paste0(exonflag,'_cis_trans_merge.tbl')
+	cistable_loc = file.path(outfolder, 'cis','cis_merge_4.45e-5.tbl')
+	transtable_loc = file.path(outfolder, 'trans','trans_merge_9.05e-7.tbl')
+	cistable = read.table(cistable_loc, T, sep='\t', stringsAsFactors=F)
+	transtable = read.table(transtable_loc, T, sep='\t',stringsAsFactors=F)
+	
+	#FIND UNIQUE SNPS in CIS
+	cis_snps <- unique(cistable$SNP)
+	sub_transtable <- 	transtable[transtable$SNP %in% cis_snps,]
+	
+	
+	#FIND UNIQUE SNPs IN TRANS
+	trans_snps <- unique(transtable$SNP)
+	sub_cistable <- cistable[cistable$SNP %in% trans_snps,]
+	
+	#ADD DICT INFO
+	sub_cis_merge <- merge(sub_cistable, annot_dict, by.x='SNP_IM', by.y='imchip', all.x=TRUE, all.y=FALSE)
+	sub_trans_merge <- merge(sub_transtable, annot_dict, by.x='SNP_IM', by.y='imchip', all.x=TRUE, all.y=FALSE)
+	
+	#WRITE TRANS ALSO IN CIS
+	transoutloc = file.path(outfolder, paste0(exonflag,'_TRANS_overlap.tbl'))
+	cisoutloc = file.path(outfolder, paste0(exonflag,'_CIS_overlap.tbl'))
+	write_out(sub_trans_merge, transoutloc)
+	write_out(sub_cis_merge, cisoutloc)
+	
+	
+
+}
+
+
+
+compare_pca_and_non <- function(basebasefolder='/home/jkb4y/cphgdesk_share/Achilleas', filter='', exon=FALSE, cis=TRUE, perm=FALSE){
+	
+	
+	non_pcaCorrected_base <- file.path(basebasefolder, 'eQTLs_Feb2013')
+	pcaCorrected_base <- paste0(non_pcaCorrected_base, '_pcaCorrected')
+	
+	
+	non_pcaCorrected_loc <- locate_merge_out(type='merge',basefolder=non_pcaCorrected_base,exon=exon,cis=cis, filter=filter, perm=perm)
+	pcaCorrected_loc <- locate_merge_out(type='merge',basefolder=pcaCorrected_base,exon=exon,cis=cis, filter=filter, perm=perm)
+	pcacorr = substr(pcaCorrected_loc, 1, nchar(pcaCorrected_loc) - 4)
+	nonpcacorr = substr(pcaCorrected_loc, 1, nchar(non_pcaCorrected_loc) - 4)
+	out_loc = paste0(pcacorr , '_compared_to_nonPCAcorrected.txt')
+	outfolder <- locate_merge_out(type='folder',basefolder=pcaCorrected_base, exon=exon,cis=cis,filter=filter,perm=perm)
+	
+	non_corrected <- read.table(non_pcaCorrected_loc, T, stringsAsFactors=F)
+	corrected <- read.table(pcaCorrected_loc, T, stringsAsFactors=F)
+	
+	if (!exon){
+		matched_cols <- c('SNP','GENE')
+		#FIND SNP/GENE PAIRS in NON CORRECTED
+		non_pairs <- with(non_corrected, paste0(SNP, GENE))
+		#FIND SNP/GENE PAIRS in PCA CORRECTED
+		pairs <- with(corrected, paste0(SNP, GENE))
+		}
+	else{
+		matched_cols <- c('SNP','GENE','EXON')
+		#FIND SNP/GENE PAIRS in NON CORRECTED
+		non_pairs <- with(non_corrected, paste0(SNP, GENE, EXON))
+		#FIND SNP/GENE PAIRS in PCA CORRECTED
+		pairs <- with(corrected, paste0(SNP, GENE, EXON))
+		}
+	non_corrected$pairs <- non_pairs
+	corrected$pairs <- pairs
+	
+	non_genes <- unique(non_corrected[,'GENE'])
+	genes <- unique(corrected[,'GENE'])
+	
+	non_snps <- unique(non_corrected[,'SNP'])
+	snps <- unique(corrected[,'SNP'])
+	
+	sink(out_loc)
+	print('TRUE is the number of GENE/SNP pairs that can be found in both the pcaCorrected and the non_pcaCorrected merges, FALSE is the number of GENE/SNP pairs in the pcaCorrected merge that are NOT found in the non_pcaCorrected merge:')
+	summary <- summary(pairs %in% non_pairs)
+	names(summary)[names(summary)=="TRUE"] <- "GENE/SNP PAIRS IN BOTH"
+	names(summary)[names(summary)=="FALSE"] <- "GENE/SNP PAIRS IN PCA CORRECTED ONLY"
+	print(summary)
+	
+
+	print('TRUE is the number of GENE/SNP pairs that can be found in both the pcaCorrected and the non_pcaCorrected merges, FALSE is the number of GENE/SNP pairs in the non_pcaCorrected merge that are NOT found in the pcaCorrected merge:')
+	
+	summary <- summary(non_pairs %in% pairs)
+	names(summary)[names(summary)=="TRUE"] <- "GENE/SNP PAIRS IN BOTH"
+	names(summary)[names(summary)=="FALSE"] <- "GENE/SNP PAIRS IN NON CORRECTED ONLY"
+	print(summary)
+	
+	print('TRUE is the number of GENES that can be found in both the pcaCorrected and the non_pcaCorrected merges, FALSE is the number of GENES in the pcaCorrected merge that are NOT found in the non_pcaCorrected merge:')
+	print(summary(genes %in% non_genes))
+
+	
+	print('TRUE is the number of GENES that can be found in both the pcaCorrected and the non_pcaCorrected merges, FALSE is the number of GENES in the non_pcaCorrected merge that are NOT found in the pcaCorrected merge:')
+	print(summary(non_genes %in% genes))
+
+	print('TRUE is the number of individual SNPS that can be found in both the pcaCorrected and the non_pcaCorrected merges, FALSE is the number of individual SNPs in the pcaCorrected merge that are NOT found in the non_pcaCorrected merge:')
+	print(summary(snps %in% non_snps))
+
+	print('TRUE is the number of individual SNPS that can be found in both the pcaCorrected and the non_pcaCorrected merges, FALSE is the number of individual SNPs in the non_pcaCorrected merge that are NOT found in the pcaCorrected merge:')
+	print(summary(non_snps %in% snps))	
+	
+	
+	sink()
+	
+	#BUILD ANNOTATION DICTIONARY
+	dict_loc = '/home/jkb4y/work/data/annot_hg19_extended.dict'
+	annot_dict <- read.table(dict_loc, stringsAsFactors=F)
+	colnames(annot_dict) <- c('imchip', 'lz', 'rs', 'hg19_chr', 'hg19_pos','hg18_chr','hg18_pos','chr_band', 'FunctionGVS', 'weimin', 'FunctionDBSNP', 'GeneList', 'DistanceToSplice', 'AminoAcids')
+	annot_dict <- annot_dict[,which(names(annot_dict) %in% c('imchip', 'FunctionGVS', 'GeneList', 'AminoAcids', 'FunctionDBSNP', 'DistanceToSplice'))]
+	
+	
+	#SUBSET THE TABLES WITH THE INTERSECTIONS
+	sub_non_corrected <- non_corrected[!(non_corrected$pairs %in% pairs),]
+	sub_corrected <- corrected[!(corrected$pairs %in% non_pairs),]
+	
+	#ADD DICT INFO
+	sub_non_corrected <- merge(sub_non_corrected, annot_dict, by.x='SNP_IM', by.y='imchip', all.x=TRUE, all.y=FALSE)
+	sub_corrected <- merge(sub_corrected, annot_dict, by.x='SNP_IM', by.y='imchip', all.x=TRUE, all.y=FALSE)
+	
+	#WRITE TRANS ALSO IN CIS
+	correctedoutloc = file.path(outfolder, 'PCA_merge_unique_pairs.tbl')
+	noncorrectedoutloc = file.path(outfolder,'nonPCA_merge_unique_pairs.tbl')
+	write_out(sub_corrected, correctedoutloc)
+	write_out(sub_non_corrected, noncorrectedoutloc)
+
+}
+
+do_all_the_things <- function(basefolder='/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Feb2013_pcaCorrected/', tablefolder='/home/jkb4y/ubs/work/data/Achilleas/eQTLs_Feb2013_pcaCorrected', exon=FALSE, outfolder=NA, perm=FALSE, gwas_loc="/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Feb2013_pcaCorrected/data/gwascatalog_20130111.txt",r2_loc='/home/jkb4y/cphgdesk_share/Projects/IMCHIP/Intersect_SNP_list/2012Oct17/eurmeta/eurmeta_LD/all_regions_r2_0.ld',yank_loc='/home/jkb4y/cphgdesk_share/Projects/IMCHIP/Intersect_SNP_list/2012Oct17/eurmeta/RegionYank/eurmeta_yank.tbl'){
+	#run merge tables for cis and trans
+	cislist = c(TRUE, FALSE)
+	for (cis in cislist){
+		if (cis){ filter = '4.45e-5'}
+		else {filter = '9.05e-7'}
+		merge_tables(filter=filter, cis=cis, exon=exon, tablefolder=tablefolder,basefolder=basefolder,outfolder=outfolder, gwas_loc=gwas_loc,r2_loc=r2_loc,yank_loc=yank_loc,perm=perm)
+		compare_pca_and_non(basebasefolder='/home/jkb4y/cphgdesk_share/Achilleas/', exon=exon, cis=cis, filter=filter)
+	}
+	compare_merges(exon=exon, basefolder=basefolder)
+	merge_overlap(exon=exon, basefolder=basefolder)
+
+
+
 }
