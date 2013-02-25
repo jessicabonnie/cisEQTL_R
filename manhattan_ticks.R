@@ -55,8 +55,8 @@ achilleas_all <- function(flag='', file_type='jpeg', ymin=3, onepage=FALSE, file
 	#		}
 	#	par(mfcol=c(5,2),mar=c(3.1,4.1,2.1,2.1))
 	#}
-cisp = -log10(.05/1125)
-transp = -log10(.05/55336)
+cisp = -log10(0.05/1114)
+transp = -log10(0.05/54821)
 	for (exon in exonlist){
 		if (onepage){
 		if (exon){title_flag = 'Exon'}

@@ -434,8 +434,8 @@ compare_merges <- function(exon=FALSE, basefolder='/home/jkb4y/cphgdesk_share/Ac
 	else {exonflag = 'transcript'}
 	outfolder = file.path(basefolder, exonflag)
 	filename = paste0(exonflag,'_cis_trans_merge.tbl')
-	cistable_loc = file.path(outfolder, 'cis','cis_merge_4.45e-5.tbl')
-	transtable_loc = file.path(outfolder, 'trans','trans_merge_9.05e-7.tbl')
+	cistable_loc = file.path(outfolder, 'cis','cis_merge_4.49e-5.tbl')
+	transtable_loc = file.path(outfolder, 'trans','trans_merge_9.12e-7.tbl')
 	cistable = read.table(cistable_loc, T, sep='\t', stringsAsFactors=F)
 	transtable = read.table(transtable_loc, T, sep='\t',stringsAsFactors=F)
 
@@ -465,8 +465,8 @@ merge_overlap <- function(exon=FALSE, basefolder='/home/jkb4y/cphgdesk_share/Ach
 	else {exonflag = 'transcript'}
 	outfolder = file.path(basefolder, exonflag)
 	#filename = paste0(exonflag,'_cis_trans_merge.tbl')
-	cistable_loc = file.path(outfolder, 'cis','cis_merge_4.45e-5.tbl')
-	transtable_loc = file.path(outfolder, 'trans','trans_merge_9.05e-7.tbl')
+	cistable_loc = file.path(outfolder, 'cis','cis_merge_4.49e-5.tbl')
+	transtable_loc = file.path(outfolder, 'trans','trans_merge_9.12e-7.tbl')
 	cistable = read.table(cistable_loc, T, sep='\t', stringsAsFactors=F)
 	transtable = read.table(transtable_loc, T, sep='\t',stringsAsFactors=F)
 	
@@ -593,8 +593,8 @@ do_all_the_things <- function(basefolder='/home/jkb4y/cphgdesk_share/Achilleas/e
 	#run merge tables for cis and trans
 	cislist = c(TRUE, FALSE)
 	for (cis in cislist){
-		if (cis){ filter = '4.45e-5'}
-		else {filter = '9.05e-7'}
+		if (cis){ filter = '4.49e-5'}
+		else {filter = '9.12e-7'}
 		merge_tables(filter=filter, cis=cis, exon=exon, tablefolder=tablefolder,basefolder=basefolder,outfolder=outfolder, gwas_loc=gwas_loc,r2_loc=r2_loc,yank_loc=yank_loc,perm=perm)
 		compare_pca_and_non(basebasefolder='/home/jkb4y/cphgdesk_share/Achilleas/', exon=exon, cis=cis, filter=filter)
 	}

@@ -36,11 +36,11 @@ main <- function(outfolder="/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Feb2013",
 	basefolder <- file.path(basefolder, exonflag)
 	if (cis){
 		cisflag <- "cis"
-		pmax = "4.45e-5"
+		pmax = "4.49e-5"
 		}
 	else {
 		cisflag <- "trans"
-		pmax = "9.05e-7"
+		pmax = "9.12e-7"
 		}
 	basefolder <- file.path(basefolder, cisflag)
 	merge_loc <- file.path(basefolder,paste0(cisflag,thinflag,"_merge_",pmax,"_lit.tbl"))

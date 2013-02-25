@@ -45,9 +45,9 @@ def determine_table_name(cell_type, exon, cis):
 
 def determine_filter(cis):
     if cis:
-        p_filter = 4.45e-5
+        p_filter = 0.05/1114
     else:
-        p_filter = 9.05e-7
+        p_filter = .05/54821
     return p_filter
 
 def determine_fudge(pstar):
