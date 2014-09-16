@@ -176,7 +176,7 @@ retrieve.yank.lines <- function(gene, df, region){
 
 }
 
-read_and_filter <- function(table_loc, filter, perm, cis=TRUE, exon=FALSE){
+read_then_filter <- function(table_loc, filter, perm, cis=TRUE, exon=FALSE){
 	df <- read.delim(table_loc, T, stringsAsFactors=FALSE, sep='\t')
 	names(df)[names(df)=='SNP']<-'SNP_AP'
 	print(head(df))
@@ -192,12 +192,21 @@ read_and_filter <- function(table_loc, filter, perm, cis=TRUE, exon=FALSE){
 
 }
 
-region_yank <-function(cell.type=NULL,region_loc=NULL,perm=FALSE, pmax = 1, exon=FALSE, filter=1e-4, cis=TRUE, expansion=0){
+region_yank <-function(cell.type=NULL,region_loc=NULL,perm=FALSE, pmax = 1, exon=FALSE, filter=1e-4, cis=TRUE, expansion=0, pca=NA, pca.table=NULL,foldertitle=foldertitle){
 	library(plyr)
-	folder_loc = "/home/jkb4y/ubs/work/data/Achilleas/eQTLs_Feb2013_pcaCorrected"
+	#folder = 'eQTLs_June2014'
+	if (!(is.null(pca.table))){
+	  subfolder='mixedpca'
+	  pcaflag=paste0('_pca',pca)
+	}
+	else {
+    if(is.na(pca)){subfolder = 'unCorrected'; pcaflag=''}
+    else {subfolder=paste0('pca',as.character(pca)); pcaflag=paste0('_',subfolder)}
+	}
+	folder_loc = file.path("/home/jkb4y/ubs/work/data/Achilleas",foldertitle)
 	#folder_loc = "/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Jan2013/data"
 	#out_basefolder = "/home/jkb4y/ubs/work/results/Achilleas/eQTLs_Jan2013"
-	out_basefolder = "/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Feb2013_pcaCorrected"
+	out_basefolder = file.path("/home/jkb4y/cphgdesk_share/Achilleas",foldertitle,subfolder)
 	columns <- c("REGION", "GENE","SNP_AP","SNP_IM","CHR","BP","P")
 	print(columns)
 	perm_flag = ""
@@ -214,13 +223,13 @@ region_yank <-function(cell.type=NULL,region_loc=NULL,perm=FALSE, pmax = 1, exon
 	if (exon){
 		transcriptflag = 'exon'
 		#file_name = paste0(cell.type,"_exon_cis_eqtl",perm_flag,"_results_noNA_JB.txt")
-		file_name = paste0("exonCis", cell.type,".txt")
+		file_name = paste0("exonCis", cell.type,pcaflag,".txt")
 		columns <- c(columns, c("EXON"))
 		print(columns)
 		}
 	else{
 		transcriptflag = 'transcript'
-		file_name = paste0('transcriptCis',cell.type,'.txt')
+		file_name = paste0('transcriptCis',cell.type,pcaflag,'.txt')
 		}
 	}
 	else{
@@ -229,15 +238,15 @@ region_yank <-function(cell.type=NULL,region_loc=NULL,perm=FALSE, pmax = 1, exon
 		#file_name = paste0(cell.type,'_all_data_JB.txt')
 		#if (exon){
 		transcriptflag = 'exon'
-		file_name = paste0("exonTrans",cell.type,"_filtered_","1e-04",".txt")
+		file_name = paste0("exonTrans",cell.type,pcaflag,"_filtered_","1e-04",".txt")
 		}
 		else{ 
 		transcriptflag = 'transcript'
-		file_name = paste0('transcriptTrans',cell.type,'_filtered_1e-04.txt')
+		file_name = paste0('transcriptTrans',cell.type,pcaflag,'_filtered_1e-04.txt')
 		}
 		}
 	out_basefolder = file.path(out_basefolder, transcriptflag, cisflag)
-	yank_name = paste0(cell.type,'_',cisflag,perm_flag,"_",transcriptflag,"_R_yank.tbl")
+	yank_name = paste0(cell.type,'_',cisflag,perm_flag,"_",transcriptflag,pcaflag,"_R_yank.tbl")
 	print(yank_name)
 	#perm_flag = ""
 	#if (perm == TRUE){
@@ -253,7 +262,7 @@ region_yank <-function(cell.type=NULL,region_loc=NULL,perm=FALSE, pmax = 1, exon
 	#file_name = paste0(cell.type,"_cis_transcript_eqtls",perm_flag,"_all_new_noNA_JB.txt")
 	table_loc <- file.path(folder_loc, file_name, fsep = .Platform$file.sep)
 	print(table_loc)
-	table.df <- read_and_filter(table_loc, filter, perm, cis, exon)
+	table.df <- read_then_filter(table_loc, filter, perm, cis, exon)
 	
 	#print(names(table.df))
 	regions <- read.table(region_loc,T,strip.white = TRUE)
@@ -297,11 +306,26 @@ region_yank <-function(cell.type=NULL,region_loc=NULL,perm=FALSE, pmax = 1, exon
 #print(thing)
 }
 
-yank_all_cells <- function(region_loc="/home/jkb4y/work/data/Region_Lists/hg19/achilleas_all_09202012.txt",perm=FALSE, filter=1e-4, exon=FALSE, cis=TRUE, expansion=1){
-	if (cis){ pmax = 0.05/1125}
-	else {pmax = 0.05/55336}
+yank_all_cells <- function(region_loc="/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_June2014/data/achilleas_all_09202012.txt",
+                           perm=FALSE, filter=1e-4, exon=FALSE, cis=TRUE, expansion=0, pca=NA, pca.table.loc=NA,chip='I',
+                           foldertitle='eQTLs_June2014'){
+  source('/h4/t1/users/jkb4y/programs/cisEQTL_R/compare_cells.R')
+  #if (cis){ pmax = 0.05/1125}
+	#else {pmax = 0.05/55336}
+  pca.table=NULL
+  exonflag='transcript'
+  if (exon){exonflag='exon'}
+  if (!(is.na(pca.table.loc))){
+    pca.table<-read.table(file=pca.table.loc,T)    
+  }
+  
+  pmax = determine_sigp(chip=chip,cis=cis,exon=exon)
 	for (cell in c("B","CD4","CD8","MONO","NK")){
-		region_yank(cell.type=cell,region_loc=region_loc,perm=perm, pmax=pmax, exon=exon, filter=filter,cis=cis, expansion=expansion)
+    if (!(is.null(pca.table))){
+      pca <- as.character(pca.table[,paste0(exonflag,'PCA')][pca.table$CellType==cell])
+    }
+		region_yank(cell.type=cell,region_loc=region_loc,perm=perm, pmax=pmax, exon=exon, filter=filter,cis=cis,
+                expansion=expansion, pca=pca,pca.table=pca.table,foldertitle=foldertitle)
 	
 	}
 	

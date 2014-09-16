@@ -3,7 +3,7 @@ import sys
 sys.path.insert(0, '/home/jkb4y/h4t1/programs/plink_python/')
 import pc_toolbox
 import os
-
+import getopt
 
 def read_literature_additions(lit_add_loc):
     with open(lit_add_loc, mode="r") as lit:
@@ -159,26 +159,98 @@ def build_achilleas_key(key_loc):
             key[achilleas] = im
     return key
 
-def main(argv):
+def cl_arguments(argv):
+    '''Reads arguments from the command line and assigns values to globals
+
+    Keyword arguments:
+    argv -- commandline arguments (?)
+    '''
+    global chip, exon, cis, basefolder, pca, perm
     
-    basefolder= '/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Feb2013_pcaCorrected'
+    chip = None
+    pca='mixed'
+    cis = True
+    perm = False
+    exon = True
+    perm=False
+    #basefolder= '/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_July2013_exome'
+    
+    try: 
+        opts, args = getopt.getopt(argv, "hc:b:",
+                                   ["help","chip=","pca=",
+                                    "cis","exon","trans","transcript","basefolder=","perm"
+                                    ])
+    except getopt.GetoptError:
+        usage()
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt in ("-h","--help"):
+            usage()
+            sys.exit()
+        elif opt in ("-c","--chip"):
+            chip = arg
+        elif opt in ("-b","--basefolder"):
+            basefolder = arg
+        elif opt in ("--pca"):
+            pca = arg
+        elif opt in ("--trans"):
+            cis=False
+        elif opt in ("--cis"):
+            cis=True
+        elif opt in ("--transcript"):
+            exon=False
+        elif opt in ("--exon"):
+            exon= True
+        elif opt in ("--perm"):
+            perm= True
+
+
+
+
+def main(argv):
+    global cis, exon, chip, basefolder, perm, pca
+    cl_arguments(argv)
+    #basefolder= '/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_July2013_exome'
     #basefolder= '/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Oct2012'
     #achilleas_key_loc = '/home/jkb4y/cphgdesk_share/Achilleas/cis-eQTLs_Aug2012/immIDs2currentIDs.tsv'
     #achilleas_key = build_achilleas_key(achilleas_key_loc)
+    #chip='exome'
+    #pca='mixed'
+    #cis = True
+    #exon = True
+    if pca is None:
+        subfolder='unCorrected'
+        pcaflag=''
+    elif pca=='mixed':
+        subfolder='mixedpca'
+        pcaflag=subfolder+'_'
+    else:
+        subfolder = 'pca'+pca
+        pcaflag=subfolder+'_'
+    basefolder=os.path.join(basefolder, subfolder)
     
-    exon = True
-    
-    cis = True
-    perm = False
-    
+    if chip == 'imchip':
+        if not cis:
+            filt = '9.12e-7'
+        else:
+            filt = '4.49e-5'
+    if chip == 'exome':
+        if cis:
+            if exon:
+                filt='7.485e-5'
+            else:
+                filt='7.042e-5'
+        else:
+            if exon:
+                filt='2.045e-6'
+            else:
+                filt='1.814e-6'
     if not cis:
         cisfolder = 'trans'
         cis_flag = 'trans_'
-        filt = '9.05e-7'
     else:
         cisfolder = 'cis'
         cis_flag = 'cis_'
-        filt = '4.45e-5'
     if exon:
         transfolder = "exon"
     else:
@@ -188,17 +260,17 @@ def main(argv):
     else:
         permflag = ""
     outfolder = os.path.join(basefolder, transfolder, cisfolder)
-    lit_loc = "/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Feb2013_pcaCorrected/data/gwascatalog_20130111.txt"
-    add_lit_loc = "/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Feb2013_pcaCorrected/data/additional_journals.txt"
+    lit_loc = "/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_June2014/data/gwascatalog_20131217.txt"
+    add_lit_loc = "/home/jkb4y/cphgdesk_share/Achilleas/additional_journals.txt"
     #r2_loc = '/home/jkb4y/cphgdesk_share/Projects/IMCHIP/Intersect_SNP_list/2012Oct17/eurmeta/eurmeta_LD/all_regions_r2_0.ld'
     #si_loc = '/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Oct2012/data/si_SNP_NoMHC_20121024_Query.txt'
     lit_dict = read_literature(lit_loc)
     add_lit_dict = read_literature_additions(add_lit_loc)
     #r2_dict = read_r2(r2_loc)
     #si_list = read_si(si_loc)
-    mamamerge_loc = os.path.join(outfolder, cis_flag + 'merge_'+ filt +'.tbl')
-    thin_merge_loc = os.path.join(outfolder, cis_flag+'thin_merge_'+filt+'.tbl')
-    multigene_merge_loc = os.path.join(outfolder, cis_flag+'multigene_region_merge_'+filt+'.tbl')
+    mamamerge_loc = os.path.join(outfolder, cis_flag +pcaflag +'merge_'+ filt +'.tbl')
+    thin_merge_loc = os.path.join(outfolder, cis_flag+pcaflag +'thin_merge_'+filt+'.tbl')
+    multigene_merge_loc = os.path.join(outfolder, cis_flag+ pcaflag +'multigene_region_merge_'+filt+'.tbl')
     for merge_loc in [mamamerge_loc,thin_merge_loc,multigene_merge_loc]:
         base, ext = os.path.splitext(merge_loc)
         out_loc = base + '_lit'+ext
