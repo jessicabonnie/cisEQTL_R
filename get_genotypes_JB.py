@@ -1,5 +1,5 @@
 import sys
-# This script takes two arguments
+# This script takes three arguments
 # the first one is the root of the plink file (it uses both the .map and .ped files)
 # the second is a plink frequency file produced from the above
 # the third one is the name of the output file
@@ -7,9 +7,9 @@ import sys
 #
 # there no error checking
 plink_root = '/m/cphg-expr1/cphg-expr1/temp_data/data/BRI_eqtl_data/intermediate/plinkmap'
-fileout = '/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Mar2013_pcaCorrected/data/talk_genotypes.txt'
-alleleout = '/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Mar2013_pcaCorrected/data/MmAlleles.txt'
-plink_freq = '/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_Mar2013_pcaCorrected/data/geno.frq'
+fileout = '/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_June2013/data/talk_genotypes.txt'
+alleleout = '/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_June2013/data/MmAlleles.txt'
+plink_freq = '/home/jkb4y/cphgdesk_share/Achilleas/eQTLs_June2013/data/geno.frq'
 
 #plink_root=sys.argv[1]
 plink_map=plink_root+".map"
