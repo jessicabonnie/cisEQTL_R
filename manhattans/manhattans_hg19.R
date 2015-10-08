@@ -1,0 +1,46 @@
+source('~/h4t1/programs/cisEQTL_R/manhattan_ticks.R')
+title='Danish Case Control'
+results <- read.table('/h2/t74/cphgdesk/share/cphg_lab/Caroline/Updated_hg19/data/dk_test_new_noNA.assoc.logistic',T)
+
+out_base<-'/h2/t74/cphgdesk/share/cphg_lab/Caroline/Updated_hg19/manhattans/manhattan'
+out_pdf <- paste0(out_base,'.pdf')
+out_pdf_long <- paste0(out_base,'l.pdf')
+out_jpg <- paste0(out_base,'.jpg')
+out_100_pdf <- paste0(out_base,'_100.pdf')
+out_100_pdf_long <- paste0(out_base,'_100l.pdf')
+out_100_jpg <- paste0(out_base,'_100.jpg')
+out_60_jpg <- paste0(out_base,'_60.jpg')
+out_60_pdf <- paste0(out_base,'_60.pdf')
+out_60_pdf_long <- paste0(out_base,'_60l.pdf')
+
+
+pdf(out_pdf, title=title, width=11, height=8.5) #,paper="letter", horizontal=T)
+manhattan(results, colors=c("navy","darkorange"),genomewideline=F,main=title)
+dev.off()
+pdf(out_pdf_long, title=title, width=20, height=8.5) #,paper="letter", horizontal=T)
+manhattan(results, colors=c("navy","darkorange"),genomewideline=F,main=title)
+dev.off()
+jpeg(out_jpg, quality = 100, width=1000,height=600)
+manhattan(results, colors=c("navy","darkorange"),genomewideline=F,main=title)
+dev.off()
+pdf(out_100_pdf, title=title, width=11, height=8.5) #,paper="letter", horizontal=T)
+manhattan(results, colors=c("navy","darkorange"),genomewideline=F,ymax=100,main=title)
+dev.off()
+pdf(out_100_pdf_long, title=title, width=20, height=8.5) #,paper="letter", horizontal=T)
+manhattan(results, colors=c("navy","darkorange"),genomewideline=F,ymax=100,main=title)
+dev.off()
+jpeg(out_100_jpg, quality = 100, width=1000,height=600)
+manhattan(results, colors=c("navy","darkorange"),genomewideline=F,ymax=100,main=title)
+dev.off()
+
+pdf(out_60_pdf, title=title, width=11, height=8.5) #,paper="letter", horizontal=T)
+manhattan(results, colors=c("navy","darkorange"),genomewideline=F,ymax=60,main=title)
+dev.off()
+pdf(out_60_pdf_long, title=title, width=20, height=8.5) #,paper="letter", horizontal=T)
+manhattan(results, colors=c("navy","darkorange"),genomewideline=F,ymax=60,main=title)
+dev.off()
+jpeg(out_60_jpg, quality = 100, width=1000,height=600)
+manhattan(results, colors=c("navy","darkorange"),genomewideline=F,ymax=60,main=title)
+dev.off()
+
+
